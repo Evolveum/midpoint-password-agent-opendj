@@ -1,0 +1,4 @@
+** TODO **
+
+Don't store password for openDJ in plain text in the config
+Use the PersistentQueue from within OpenDJ rather than writing them out as files individually

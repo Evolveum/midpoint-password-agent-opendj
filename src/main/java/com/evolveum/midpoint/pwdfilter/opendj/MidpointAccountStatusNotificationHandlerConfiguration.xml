@@ -1,0 +1,390 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ! DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
+  !
+  ! Copyright © 2011-2012 ForgeRock AS. All rights reserved.
+  !
+  ! The contents of this file are subject to the terms
+  ! of the Common Development and Distribution License
+  ! (the License). You may not use this file except in
+  ! compliance with the License.
+  !
+  ! You can obtain a copy of the License at
+  ! http://forgerock.org/license/CDDLv1.0.html
+  ! See the License for the specific language governing
+  ! permission and limitations under the License.
+  !
+  ! When distributing Covered Code, include this CDDL
+  ! Header Notice in each file and include the License file
+  ! at http://forgerock.org/license/CDDLv1.0.html
+  ! If applicable, add the following below the CDDL Header,
+  ! with the fields enclosed by brackets [] replaced by
+  ! your own identifying information:
+  ! "Portions Copyrighted [year] [name of copyright owner]"
+  ! Portions Copyrighted 2013 Salford Software Ltd
+-->
+<adm:managed-object name="midpoint-account-status-notification-handler"
+  plural-name="midpoint-account-status-notification-handlers"
+  extends="account-status-notification-handler"
+  package="com.evolveum.midpoint.pwdfilter.opendj"
+  parent-package="org.opends.server.admin.std"
+  xmlns:adm="http://www.opends.org/admin"
+  xmlns:ldap="http://www.opends.org/admin-ldap">
+  <adm:synopsis>
+    The
+    <adm:user-friendly-name />
+    is an account status notification handler that post a message to OpenIDM
+    whenever an account status notification is generated for password
+    reset or changes.
+  </adm:synopsis>
+  <adm:profile name="ldap">
+    <ldap:object-class>
+      <ldap:name>
+        ds-cfg-midpoint-account-status-notification-handler
+      </ldap:name>
+      <ldap:superior>
+        ds-cfg-account-status-notification-handler
+      </ldap:superior>
+    </ldap:object-class>
+  </adm:profile>
+  <adm:property-override name="java-class" advanced="true">
+    <adm:default-behavior>
+      <adm:defined>
+        <adm:value>com.evolveum.midpoint.pwdfilter.opendj.MidpointAccountStatusNotificationHandler</adm:value>
+      </adm:defined>
+    </adm:default-behavior>
+  </adm:property-override>
+  <!--adm:property name="asynchronous"
+    mandatory="true">
+    <adm:synopsis>
+      Indicates whether the notification should be send asynchronously to
+      OpenIDM.
+    </adm:synopsis>
+    <adm:description>
+      When notifications are synchronous, the messages will be recorded and
+      replay in case of failure.
+    </adm:description>
+    <adm:default-behavior>
+      <adm:defined>
+        <adm:value>true</adm:value>
+      </adm:defined>
+    </adm:default-behavior>
+    <adm:syntax>
+      <adm:boolean />
+    </adm:syntax>
+    <adm:profile name="ldap">
+      <ldap:attribute>
+        <ldap:name>
+          ds-cfg-asynchronous
+        </ldap:name>
+      </ldap:attribute>
+    </adm:profile>
+  </adm:property-->
+  <adm:property name="update-interval"
+    mandatory="true">
+    <adm:synopsis>
+      Specifies the interval in seconds when referential integrity
+      updates are made.
+    </adm:synopsis>
+    <adm:description>
+      If this value is 0, then the updates are made synchronously in the
+      foreground.
+    </adm:description>
+    <adm:default-behavior>
+      <adm:defined>
+        <adm:value>0 seconds</adm:value>
+      </adm:defined>
+    </adm:default-behavior>
+    <adm:syntax>
+      <adm:duration base-unit="s" allow-unlimited="false" />
+    </adm:syntax>
+    <adm:profile name="ldap">
+      <ldap:attribute>
+        <ldap:name>ds-cfg-update-interval</ldap:name>
+      </ldap:attribute>
+    </adm:profile>
+  </adm:property>
+  <adm:property name="log-file" mandatory="true">
+    <adm:synopsis>
+      Specifies the log file location where the changed passwords are
+      written when the plug-in cannot contact OpenIDM.
+    </adm:synopsis>
+    <adm:description>
+      The default location is the logs directory of the server
+      instance, using the file name "pwsync".
+      Passwords in this file will be encrypted.
+    </adm:description>
+    <adm:default-behavior>
+      <adm:defined>
+        <adm:value>logs/pwsync</adm:value>
+      </adm:defined>
+    </adm:default-behavior>
+    <adm:syntax>
+      <adm:string>
+        <adm:pattern>
+          <adm:regex>.*</adm:regex>
+          <adm:usage>FILE</adm:usage>
+          <adm:synopsis>
+            A path to an existing file that is readable by the server.
+          </adm:synopsis>
+        </adm:pattern>
+      </adm:string>
+    </adm:syntax>
+    <adm:profile name="ldap">
+      <ldap:attribute>
+        <ldap:name>ds-cfg-log-file</ldap:name>
+      </ldap:attribute>
+    </adm:profile>
+  </adm:property>
+  <adm:property name="password-attribute" mandatory="true">
+    <adm:synopsis>
+      Specifies the attribute type used to hold user passwords in json patch.
+    </adm:synopsis>
+    <adm:description>
+      This attribute type must be defined in the managed object schema, and it
+      must have either the user password or auth password syntax.
+    </adm:description>
+    <adm:default-behavior>
+      <adm:defined>
+        <adm:value>password</adm:value>
+      </adm:defined>
+    </adm:default-behavior>
+    <adm:syntax>
+      <adm:string>
+        <adm:pattern>
+          <adm:regex>.*</adm:regex>
+          <adm:usage>STRING</adm:usage>
+          <adm:synopsis>
+            OpenIDM managed object attribute name.
+          </adm:synopsis>
+        </adm:pattern>
+      </adm:string>
+    </adm:syntax>
+    <adm:profile name="ldap">
+      <ldap:attribute>
+        <ldap:name>ds-cfg-attribute</ldap:name>
+      </ldap:attribute>
+    </adm:profile>
+  </adm:property>
+  <!-- 
+  <adm:property name="query-id" mandatory="true">
+    <adm:synopsis>
+      Specifies the query-id for the patch-by-query request.
+    </adm:synopsis>
+    <adm:description>
+      This query must be defined in the managed object service.
+    </adm:description>
+    <adm:default-behavior>
+      <adm:defined>
+        <adm:value>for-userName</adm:value>
+      </adm:defined>
+    </adm:default-behavior>
+    <adm:syntax>
+      <adm:string>
+        <adm:pattern>
+          <adm:regex>.*</adm:regex>
+          <adm:usage>STRING</adm:usage>
+          <adm:synopsis>
+            OpenIDM managed object query id.
+          </adm:synopsis>
+        </adm:pattern>
+      </adm:string>
+    </adm:syntax>
+    <adm:profile name="ldap">
+      <ldap:attribute>
+        <ldap:name>ds-task-id</ldap:name>
+      </ldap:attribute>
+    </adm:profile>
+  </adm:property>
+  -->
+  <adm:property name="attribute-type" multi-valued="true">
+    <adm:synopsis>
+      Specifies the attribute types that this plug-in will send along with
+      the password change.
+    </adm:synopsis>
+    <adm:description>
+      Zero or more attribute type can be specified.
+    </adm:description>
+    <adm:default-behavior>
+      <adm:alias>
+        <adm:synopsis>
+          If no attribute types are specified, only the DN and the new
+          password of the user will be synchronized to OpenIDM.
+        </adm:synopsis>
+      </adm:alias>
+    </adm:default-behavior>
+    <adm:syntax>
+      <adm:attribute-type />
+    </adm:syntax>
+    <adm:profile name="ldap">
+      <ldap:attribute>
+        <ldap:name>ds-cfg-attribute-type</ldap:name>
+      </ldap:attribute>
+    </adm:profile>
+  </adm:property>
+  <adm:property name="midpoint-url"
+    mandatory="true">
+    <adm:synopsis>
+      Specifies the location of the service WSDL file.
+    </adm:synopsis>
+    <adm:description>
+      The WSDL location of the PasswordSyncService.
+    </adm:description>
+    <adm:default-behavior>
+      <adm:defined>
+        <adm:value>http://localhost:8080/midpoint/model/model-1</adm:value>
+      </adm:defined>
+    </adm:default-behavior>
+    <adm:syntax>
+      <adm:string>
+        <adm:pattern>
+          <!--adm:regex>(http|https)://(w+:{0,1}w*@)?(S+)(:[0-9]+)?(/|/([w#!:.?+=&amp;%@!-/]))?</adm:regex-->
+          <adm:regex>.*</adm:regex>
+          <adm:usage>STRING</adm:usage>
+          <adm:synopsis>
+            MidPoint Web Service URL
+          </adm:synopsis>
+        </adm:pattern>
+      </adm:string>
+    </adm:syntax>
+    <adm:profile name="ldap">
+      <ldap:attribute>
+        <ldap:name>
+          ds-cfg-referrals-url
+        </ldap:name>
+      </ldap:attribute>
+    </adm:profile>
+  </adm:property>
+  <adm:property name="username"
+    mandatory="true">
+    <adm:synopsis>
+      The username to authenticate to midPoint using
+    </adm:synopsis>
+    <adm:description>
+      Username to connect to provisioning engine
+    </adm:description>
+    <adm:default-behavior>
+      <adm:defined>
+        <adm:value>administrator</adm:value>
+      </adm:defined>
+    </adm:default-behavior>
+    <adm:syntax>
+      <adm:string>
+        <adm:pattern>
+          <!--adm:regex>(http|https)://(w+:{0,1}w*@)?(S+)(:[0-9]+)?(/|/([w#!:.?+=&amp;%@!-/]))?</adm:regex-->
+          <adm:regex>.*</adm:regex>
+          <adm:usage>STRING</adm:usage>
+          <adm:synopsis>
+            midPoint username
+          </adm:synopsis>
+        </adm:pattern>
+      </adm:string>
+    </adm:syntax>
+    <adm:profile name="ldap">
+      <ldap:attribute>
+        <ldap:name>
+          ds-cfg-midpoint-username
+        </ldap:name>
+      </ldap:attribute>
+    </adm:profile>
+  </adm:property>
+  <adm:property name="password"
+    mandatory="true">
+    <adm:synopsis>
+      The password to authenticate to midPoint using
+    </adm:synopsis>
+    <adm:description>
+      Password to connect to provisioning engine
+    </adm:description>
+    <adm:default-behavior>
+      <adm:defined>
+        <adm:value>5ecr3t</adm:value>
+      </adm:defined>
+    </adm:default-behavior>
+    <adm:syntax>
+      <adm:string>
+        <adm:pattern>
+          <!--adm:regex>(http|https)://(w+:{0,1}w*@)?(S+)(:[0-9]+)?(/|/([w#!:.?+=&amp;%@!-/]))?</adm:regex-->
+          <adm:regex>.*</adm:regex>
+          <adm:usage>STRING</adm:usage>
+          <adm:synopsis>
+            midPoint password
+          </adm:synopsis>
+        </adm:pattern>
+      </adm:string>
+    </adm:syntax>
+    <adm:profile name="ldap">
+      <ldap:attribute>
+        <ldap:name>
+          ds-cfg-midpoint-password
+        </ldap:name>
+      </ldap:attribute>
+    </adm:profile>
+  </adm:property>
+  <adm:property name="password-cache-dir"
+    mandatory="true">
+    <adm:synopsis>
+      The directory to cache password changes to
+    </adm:synopsis>
+    <adm:description>
+      Local dir for password cache
+    </adm:description>
+    <adm:default-behavior>
+      <adm:defined>
+        <adm:value>/opt/midpoint/opendj-pwdfilter</adm:value>
+      </adm:defined>
+    </adm:default-behavior>
+    <adm:syntax>
+      <adm:string>
+        <adm:pattern>
+          <!--adm:regex>(http|https)://(w+:{0,1}w*@)?(S+)(:[0-9]+)?(/|/([w#!:.?+=&amp;%@!-/]))?</adm:regex-->
+          <adm:regex>.*</adm:regex>
+          <adm:usage>STRING</adm:usage>
+          <adm:synopsis>
+            midPoint password
+          </adm:synopsis>
+        </adm:pattern>
+      </adm:string>
+    </adm:syntax>
+    <adm:profile name="ldap">
+      <ldap:attribute>
+        <ldap:name>
+          ds-cfg-midpoint-passwordcachedir
+        </ldap:name>
+      </ldap:attribute>
+    </adm:profile>
+  </adm:property>
+  <adm:property name="encryption-key-alias"
+    mandatory="true">
+    <adm:synopsis>
+      The alias of the encryption key to use
+    </adm:synopsis>
+    <adm:description>
+      The alias of the encryption key to use
+    </adm:description>
+    <adm:default-behavior>
+      <adm:defined>
+        <adm:value>strong</adm:value>
+      </adm:defined>
+    </adm:default-behavior>
+    <adm:syntax>
+      <adm:string>
+        <adm:pattern>
+          <!--adm:regex>(http|https)://(w+:{0,1}w*@)?(S+)(:[0-9]+)?(/|/([w#!:.?+=&amp;%@!-/]))?</adm:regex-->
+          <adm:regex>.*</adm:regex>
+          <adm:usage>STRING</adm:usage>
+          <adm:synopsis>
+            midPoint password
+          </adm:synopsis>
+        </adm:pattern>
+      </adm:string>
+    </adm:syntax>
+    <adm:profile name="ldap">
+      <ldap:attribute>
+        <ldap:name>
+          ds-cfg-midpoint-encryptionkeyalias
+        </ldap:name>
+      </ldap:attribute>
+    </adm:profile>
+  </adm:property>
+</adm:managed-object>

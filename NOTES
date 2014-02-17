@@ -1,0 +1,11 @@
+SETUP KEYS
+see  https://wiki.evolveum.com/display/midPoint/Encryption+and+Keys
+Command:
+# keytool -genseckey -alias strong -keystore password.jceks -storetype jceks -storepass changeit -keyalg AES -keysize 256 -keypass changeit
+
+
+
+
+
+./bin/dsconfig set-password-policy-prop --port 4444 --hostname `hostname` --bindDN "cn=Directory Manager" --bindPassword password --policy-name "Default Password Policy" --set account-status-notification-handler:"MidPoint Notification Handler" --trustStorePath ./config/admin-truststore --no-prompt
+
